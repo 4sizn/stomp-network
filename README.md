@@ -316,18 +316,31 @@ try {
 
 ## 🧪 Development & Testing
 
-### Running the Demo
+### Quick Start with Scripts
+
+Use the provided development scripts for common tasks:
 
 ```bash
-bun install
-bun dev
+# Start development server with type checking
+./config/scripts/dev.sh
+
+# Build the library for production
+./config/scripts/build.sh
+
+# Run comprehensive tests and validation
+./config/scripts/test.sh
+
+# Publish to npm (with version bump)
+./config/scripts/publish.sh
 ```
 
-Visit `http://localhost:3000` to see the interactive demo.
-
-### Building the Library
+### Manual Commands
 
 ```bash
+# Install dependencies and start development
+bun install
+bun dev
+
 # Build library for distribution
 bun run build:lib
 
@@ -341,6 +354,10 @@ bun run type-check
 ### Testing
 
 ```bash
+# Using the test script (recommended)
+./config/scripts/test.sh
+
+# Manual testing
 bun test
 ```
 
