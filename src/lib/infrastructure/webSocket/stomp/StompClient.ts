@@ -1,4 +1,9 @@
-import { StompConfig, Client as StompClient, IMessage } from "@stomp/stompjs";
+import {
+  StompConfig,
+  Client as StompClient,
+  IMessage,
+  IFrame,
+} from "@stomp/stompjs";
 import {
   Subject,
   Observable,
@@ -97,8 +102,8 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
   private connectionState$ = new BehaviorSubject<boolean>(false);
 
   // 이벤트 스트림들
-  private connectSubject = new Subject<void>();
-  private disconnectSubject = new Subject<void>();
+  private connectSubject = new Subject<IFrame>();
+  private disconnectSubject = new Subject<IFrame | CloseEvent>();
   private errorSubject = new Subject<Error>();
   private messageSubject = new Subject<string>();
   private stompMessageSubject = new Subject<IMessage>();
@@ -156,18 +161,18 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
         // 자동 재연결 비활성화 (RxJS retry로 제어)
         reconnectDelay: 0,
 
-        onConnect: (_frame) => {
+        onConnect: (_frame: IFrame) => {
           console.log("STOMP 연결 성공");
           this._reconnectAttempts = 0;
           this.connectionState$.next(true);
-          this.connectSubject.next();
+          this.connectSubject.next(_frame);
           observer.next(true);
           // observer.complete() 제거 - 연결 성공 시 Observable을 완료하지 않음
         },
 
-        onDisconnect: (_frame) => {
+        onDisconnect: (_frame: IFrame) => {
           this.connectionState$.next(false);
-          this.disconnectSubject.next();
+          this.disconnectSubject.next(_frame);
 
           // 수동 연결 해제가 아닌 경우에만 에러로 처리
           if (!isManualDisconnect && !observer.closed) {
@@ -175,7 +180,7 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
           }
         },
 
-        onStompError: (frame) => {
+        onStompError: (frame: IFrame) => {
           const error = new Error(frame.headers["message"] || "STOMP Error");
           this.errorSubject.next(error);
           if (!observer.closed) {
@@ -183,7 +188,7 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
           }
         },
 
-        onWebSocketError: (_event) => {
+        onWebSocketError: (_event: Event) => {
           const error = new Error("WebSocket Error");
           this.errorSubject.next(error);
           if (!observer.closed) {
@@ -191,9 +196,9 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
           }
         },
 
-        onWebSocketClose: (_event) => {
+        onWebSocketClose: (event: CloseEvent) => {
           this.connectionState$.next(false);
-          this.disconnectSubject.next();
+          this.disconnectSubject.next(event);
 
           // 수동 연결 해제가 아닌 경우에만 에러로 처리
           if (!isManualDisconnect && !observer.closed) {
@@ -313,7 +318,13 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
 
     // 연결 상태 업데이트
     this.connectionState$.next(false);
-    this.disconnectSubject.next();
+    // Manual disconnect 시에는 특별한 Close Event 생성
+    const manualCloseEvent = new CloseEvent("close", {
+      code: 1000,
+      reason: "Manual disconnect",
+      wasClean: true
+    });
+    this.disconnectSubject.next(manualCloseEvent);
   }
 
   /**
