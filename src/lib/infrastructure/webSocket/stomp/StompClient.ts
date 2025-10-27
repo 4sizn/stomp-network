@@ -55,7 +55,7 @@ interface IWebSocketClientAdapter<_T = unknown> {
   disconnect(): void;
   send(data: string): void;
   onMessage(callback: (data: string) => void): void;
-  onError(callback: (error: IFrame | Error | Event) => void): void;
+  onError(callback: (error: Error) => void): void;
   onClose(callback: () => void): void;
   onConnect(callback: () => void): void;
 }
@@ -70,9 +70,7 @@ export abstract class WebSocketClientAdapter<T, C>
   public abstract disconnect(): void;
   public abstract send(data: string): void;
   public abstract onMessage(callback: (data: string) => void): void;
-  public abstract onError(
-    callback: (error: IFrame | Error | Event) => void
-  ): void;
+  public abstract onError(callback: (error: Error) => void): void;
   public abstract onClose(callback: () => void): void;
   public abstract onConnect(callback: () => void): void;
   public abstract networkStatus(): number;
@@ -106,7 +104,7 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
   // 이벤트 스트림들
   private connectSubject = new Subject<IFrame>();
   private disconnectSubject = new Subject<IFrame | CloseEvent>();
-  private errorSubject = new Subject<IFrame | Error | Event>();
+  private errorSubject = new Subject<Error>();
   private messageSubject = new Subject<string>();
   private stompMessageSubject = new Subject<IMessage>();
 
@@ -183,17 +181,17 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
         },
 
         onStompError: (frame: IFrame) => {
-          this.errorSubject.next(frame);
+          const error = new Error(frame.headers["message"] || "STOMP Error");
+          this.errorSubject.next(error);
           if (!observer.closed) {
-            const error = new Error(frame.headers["message"] || "STOMP Error");
             observer.error(error);
           }
         },
 
         onWebSocketError: (_event: Event) => {
-          this.errorSubject.next(_event);
+          const error = new Error("WebSocket Error");
+          this.errorSubject.next(error);
           if (!observer.closed) {
-            const error = new Error("WebSocket Error");
             observer.error(error);
           }
         },
@@ -324,7 +322,7 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
     const manualCloseEvent = new CloseEvent("close", {
       code: 1000,
       reason: "Manual disconnect",
-      wasClean: true,
+      wasClean: true
     });
     this.disconnectSubject.next(manualCloseEvent);
   }
@@ -468,7 +466,7 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
     this.rxSubscriptions.push(subscription);
   }
 
-  public onError(callback: (error: IFrame | Error | Event) => void): void {
+  public onError(callback: (error: Error) => void): void {
     const subscription = this.error$.subscribe(callback);
     this.rxSubscriptions.push(subscription);
   }
