@@ -181,7 +181,9 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
         },
 
         onStompError: (frame: IFrame) => {
-          const error = new Error(frame.headers["message"] || "STOMP Error");
+          const error = new Error(frame.headers["message"] || "STOMP Error", {
+            cause: frame,
+          });
           this.errorSubject.next(error);
           if (!observer.closed) {
             observer.error(error);
@@ -189,7 +191,7 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
         },
 
         onWebSocketError: (_event: Event) => {
-          const error = new Error("WebSocket Error");
+          const error = new Error("WebSocket Error", { cause: _event });
           this.errorSubject.next(error);
           if (!observer.closed) {
             observer.error(error);
@@ -284,7 +286,10 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
               this.maxReconnectReachedSubject.next();
               this.errorSubject.next(
                 new Error(
-                  `Maximum reconnection attempts (${this.maxReconnectAttempts}) reached`
+                  `Maximum reconnection attempts (${this.maxReconnectAttempts}) reached`,
+                  {
+                    cause: error,
+                  }
                 )
               );
 
@@ -322,7 +327,7 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
     const manualCloseEvent = new CloseEvent("close", {
       code: 1000,
       reason: "Manual disconnect",
-      wasClean: true
+      wasClean: true,
     });
     this.disconnectSubject.next(manualCloseEvent);
   }
@@ -363,7 +368,10 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
             const errorMessage =
               error instanceof Error ? error.message : String(error);
             const subscriptionError = new Error(
-              `구독 실패: ${destination} - ${errorMessage}`
+              `구독 실패: ${destination} - ${errorMessage}`,
+              {
+                cause: error,
+              }
             );
             this.errorSubject.next(subscriptionError);
             observer.error(subscriptionError);
