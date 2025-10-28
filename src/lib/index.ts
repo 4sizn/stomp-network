@@ -14,7 +14,10 @@ export { StompNetworkController } from "./core/controllers/network/StompNetworkC
 
 // Plugins
 export { AbstractPlugin } from "./core/controllers/network/plugins/AbstractPlugin";
-export { TopicPlugin, type TopicSubscriptionInfo } from "./core/controllers/network/plugins/TopicPlugin";
+export {
+  TopicPlugin,
+  type TopicSubscriptionInfo,
+} from "./core/controllers/network/plugins/TopicPlugin";
 
 // Types
 export type {
@@ -34,6 +37,8 @@ export { StompConnectionError } from "./core/controllers/network/errors/StompCon
 export { StompSubscriptionError } from "./core/controllers/network/errors/StompSubscriptionError";
 export { StompMessageError } from "./core/controllers/network/errors/StompMessageError";
 export { StompReconnectionError } from "./core/controllers/network/errors/StompReconnectionError";
+export { StompStompError } from "./core/controllers/network/errors/StompStompError";
+export { StompWebsocketError } from "./core/controllers/network/errors/StompWebSocketError";
 
 // Abstract Controller
 export { AbstractController } from "./core/abstract/AbstractController";
