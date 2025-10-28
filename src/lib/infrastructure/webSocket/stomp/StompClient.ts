@@ -19,6 +19,9 @@ import {
   takeUntil,
 } from "rxjs/operators";
 
+import { StompWebsocketError } from "../../../core/controllers/network/errors/StompWebSocketError";
+import { StompStompError } from "../../../core/controllers/network/errors/StompStompError";
+
 /**
  * @description
  * 재연결 시간 모드
@@ -181,8 +184,8 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
         },
 
         onStompError: (frame: IFrame) => {
-          const error = new Error(frame.headers["message"] || "STOMP Error", {
-            cause: frame,
+          const error = new StompStompError("STOMP Error", frame, {
+            frame,
           });
           this.errorSubject.next(error);
           if (!observer.closed) {
@@ -191,7 +194,7 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
         },
 
         onWebSocketError: (_event: Event) => {
-          const error = new Error("WebSocket Error", { cause: _event });
+          const error = new StompWebsocketError("WebSocket Error", _event);
           this.errorSubject.next(error);
           if (!observer.closed) {
             observer.error(error);
