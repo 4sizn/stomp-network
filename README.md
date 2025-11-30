@@ -8,7 +8,7 @@ A comprehensive STOMP WebSocket client library with React integration, built on 
 - **React Integration**: Ready-to-use React hooks for easy integration
 - **Plugin System**: Extensible plugin architecture for advanced functionality
 - **Connection Management**: Automatic reconnection with exponential backoff
-- **Topic Management**: Advanced topic subscription with persistent subscriptions
+- **Topic Management**: Advanced topic subscription with persistent subscriptions and **auto-resubscription on reconnect**
 - **TypeScript Support**: Full TypeScript definitions included
 - **Observable Patterns**: RxJS-based reactive state management
 
@@ -33,30 +33,31 @@ npm install @stomp/stompjs rxjs react
 ### Basic Usage with React Hook
 
 ```typescript
-import { useStompClient } from '@rfice/stomp';
+import { useStompClient } from "@rfice/stomp";
 
 function MyComponent() {
-  const { connectionState, isConnected, subscribe, sendMessage } = useStompClient({
-    config: {
-      brokerURL: 'ws://localhost:8080/ws',
-      connectHeaders: {
-        Authorization: 'Bearer your-token'
-      }
-    },
-    autoConnect: true
-  });
+  const { connectionState, isConnected, subscribe, sendMessage } =
+    useStompClient({
+      config: {
+        brokerURL: "ws://localhost:8080/ws",
+        connectHeaders: {
+          Authorization: "Bearer your-token",
+        },
+      },
+      autoConnect: true,
+    });
 
   useEffect(() => {
     if (isConnected) {
-      const unsubscribe = subscribe('/topic/messages', (message) => {
-        console.log('Received:', message.body);
+      const unsubscribe = subscribe("/topic/messages", (message) => {
+        console.log("Received:", message.body);
       });
       return unsubscribe;
     }
   }, [isConnected, subscribe]);
 
   const handleSend = () => {
-    sendMessage('/app/chat', { text: 'Hello World!' });
+    sendMessage("/app/chat", { text: "Hello World!" });
   };
 
   return (
@@ -73,7 +74,7 @@ function MyComponent() {
 ### Advanced Usage with Topic Plugin
 
 ```typescript
-import { useStompTopicPlugin } from '@rfice/stomp';
+import { useStompTopicPlugin } from "@rfice/stomp";
 
 function AdvancedComponent() {
   const {
@@ -82,28 +83,28 @@ function AdvancedComponent() {
     subscribeTopic,
     listenToTopic,
     sendMessage,
-    getSubscribedTopics
+    getSubscribedTopics,
   } = useStompTopicPlugin({
     config: {
-      brokerURL: 'ws://localhost:8080/ws',
+      brokerURL: "ws://localhost:8080/ws",
       connectHeaders: {
-        Authorization: 'Bearer your-token'
-      }
+        Authorization: "Bearer your-token",
+      },
     },
     autoConnect: true,
-    persistentTopics: ['/topic/notifications'] // Auto-subscribe on connect
+    persistentTopics: ["/topic/notifications"], // Auto-subscribe on connect
   });
 
   // Subscribe to topic before connection
   useEffect(() => {
-    subscribeTopic('/topic/chat');
+    subscribeTopic("/topic/chat");
   }, [subscribeTopic]);
 
   // Listen to specific topic messages
   useEffect(() => {
     if (isConnected) {
-      const unsubscribe = listenToTopic('/topic/chat', (message) => {
-        console.log('Chat message:', JSON.parse(message.body));
+      const unsubscribe = listenToTopic("/topic/chat", (message) => {
+        console.log("Chat message:", JSON.parse(message.body));
       });
       return unsubscribe;
     }
@@ -112,9 +113,9 @@ function AdvancedComponent() {
   return (
     <div>
       <p>Status: {connectionState}</p>
-      <p>Subscribed topics: {getSubscribedTopics().join(', ')}</p>
+      <p>Subscribed topics: {getSubscribedTopics().join(", ")}</p>
       <button
-        onClick={() => sendMessage('/app/chat', { user: 'me', text: 'Hi!' })}
+        onClick={() => sendMessage("/app/chat", { user: "me", text: "Hi!" })}
         disabled={!isConnected}
       >
         Send Chat
@@ -131,27 +132,27 @@ function AdvancedComponent() {
 The main controller for STOMP connections:
 
 ```typescript
-import { StompNetworkController, StompWebSocketClient } from '@rfice/stomp';
+import { StompNetworkController, StompWebSocketClient } from "@rfice/stomp";
 
 const stompClient = new StompWebSocketClient();
 const controller = new StompNetworkController(stompClient);
 
 // Connect
 await controller.connect({
-  brokerURL: 'ws://localhost:8080/ws',
-  connectHeaders: { Authorization: 'Bearer token' },
+  brokerURL: "ws://localhost:8080/ws",
+  connectHeaders: { Authorization: "Bearer token" },
   maxAttempts: 5,
-  reconnectDelay: 3000
+  reconnectDelay: 3000,
 });
 
 // Subscribe to messages
-const subscription = controller.subscribe('/topic/updates');
-subscription.subscribe(message => {
-  console.log('Update:', message.body);
+const subscription = controller.subscribe("/topic/updates");
+subscription.subscribe((message) => {
+  console.log("Update:", message.body);
 });
 
 // Send message
-controller.sendMessage('/app/update', { data: 'value' });
+controller.sendMessage("/app/update", { data: "value" });
 
 // Disconnect
 await controller.disconnect();
@@ -162,23 +163,23 @@ await controller.disconnect();
 Advanced topic management:
 
 ```typescript
-import { TopicPlugin } from '@rfice/stomp';
+import { TopicPlugin } from "@rfice/stomp";
 
 const topicPlugin = new TopicPlugin();
 controller.addPlugin(topicPlugin);
 
 // Subscribe to topic (works before connection)
-topicPlugin.subscribeTopic('/topic/alerts');
+topicPlugin.subscribeTopic("/topic/alerts");
 
 // Get topic-specific message stream
-const alertStream = topicPlugin.getTopicMessages('/topic/alerts');
-alertStream.subscribe(message => {
-  console.log('Alert:', message.body);
+const alertStream = topicPlugin.getTopicMessages("/topic/alerts");
+alertStream.subscribe((message) => {
+  console.log("Alert:", message.body);
 });
 
 // Get all subscription info
 const subscriptions = topicPlugin.getAllTopicInfo();
-console.log('Active subscriptions:', subscriptions);
+console.log("Active subscriptions:", subscriptions);
 ```
 
 ## 🔧 Configuration
@@ -190,9 +191,9 @@ interface StompClientConfig {
   brokerURL: string;
   connectHeaders?: Record<string, string>;
   disconnectHeaders?: Record<string, string>;
-  heartbeatIncoming?: number;    // default: 4000ms
-  heartbeatOutgoing?: number;    // default: 4000ms
-  reconnectDelay?: number;       // default: 5000ms
+  heartbeatIncoming?: number; // default: 4000ms
+  heartbeatOutgoing?: number; // default: 4000ms
+  reconnectDelay?: number; // default: 5000ms
   webSocketFactory?: () => WebSocket;
   debug?: (str: string) => void;
 }
@@ -202,9 +203,9 @@ interface StompClientConfig {
 
 ```typescript
 interface ReconnectConfig {
-  maxAttempts?: number;          // default: 10
-  reconnectDelay?: number;       // default: 5000ms
-  reconnectTimeMode?: 'INTERVAL' | 'EXPONENTIAL'; // default: 'EXPONENTIAL'
+  maxAttempts?: number; // default: 10
+  reconnectDelay?: number; // default: 5000ms
+  reconnectTimeMode?: "INTERVAL" | "EXPONENTIAL"; // default: 'EXPONENTIAL'
 }
 ```
 
@@ -216,14 +217,14 @@ Basic STOMP functionality:
 
 ```typescript
 const {
-  connectionState,    // ConnectionState enum
-  isConnected,        // boolean
-  isConnecting,       // boolean
-  connect,           // () => Promise<void>
-  disconnect,        // () => Promise<void>
-  sendMessage,       // (topic: string, message: unknown) => void
-  subscribe,         // (topic: string, onMessage: (message: IMessage) => void) => () => void
-  controller         // StompNetworkController | null
+  connectionState, // ConnectionState enum
+  isConnected, // boolean
+  isConnecting, // boolean
+  connect, // () => Promise<void>
+  disconnect, // () => Promise<void>
+  sendMessage, // (topic: string, message: unknown) => void
+  subscribe, // (topic: string, onMessage: (message: IMessage) => void) => () => void
+  controller, // StompNetworkController | null
 } = useStompClient(options);
 ```
 
@@ -233,19 +234,19 @@ Advanced topic management:
 
 ```typescript
 const {
-  connectionState,      // ConnectionState enum
-  isConnected,         // boolean
-  isConnecting,        // boolean
-  connect,            // () => Promise<void>
-  disconnect,         // () => Promise<void>
-  sendMessage,        // (topic: string, message: unknown) => void
-  subscribeTopic,     // (topic: string) => void
-  unsubscribeTopic,   // (topic: string) => void
-  listenToTopic,      // (topic: string, onMessage: (message: IMessage) => void) => () => void
+  connectionState, // ConnectionState enum
+  isConnected, // boolean
+  isConnecting, // boolean
+  connect, // () => Promise<void>
+  disconnect, // () => Promise<void>
+  sendMessage, // (topic: string, message: unknown) => void
+  subscribeTopic, // (topic: string) => void
+  unsubscribeTopic, // (topic: string) => void
+  listenToTopic, // (topic: string, onMessage: (message: IMessage) => void) => () => void
   getSubscribedTopics, // () => string[]
-  getAllTopicInfo,    // () => TopicSubscriptionInfo[]
-  controller,         // StompNetworkController | null
-  topicPlugin         // TopicPlugin | null
+  getAllTopicInfo, // () => TopicSubscriptionInfo[]
+  controller, // StompNetworkController | null
+  topicPlugin, // TopicPlugin | null
 } = useStompTopicPlugin(options);
 ```
 
@@ -254,17 +255,17 @@ const {
 Create custom plugins by extending `AbstractPlugin`:
 
 ```typescript
-import { AbstractPlugin } from '@rfice/stomp';
+import { AbstractPlugin } from "@rfice/stomp";
 
 class MyCustomPlugin extends AbstractPlugin {
   public readonly name = "MyCustomPlugin";
 
   onConnect(): void {
-    console.log('Custom plugin: Connected');
+    console.log("Custom plugin: Connected");
   }
 
   onDisconnect(): void {
-    console.log('Custom plugin: Disconnected');
+    console.log("Custom plugin: Disconnected");
   }
 
   onMessage(destination: string, message: IMessage): void {
@@ -285,7 +286,7 @@ enum ConnectionState {
   CONNECTING = "CONNECTING",
   CONNECTED = "CONNECTED",
   RECONNECTING = "RECONNECTING",
-  ERROR = "ERROR"
+  ERROR = "ERROR",
 }
 ```
 
@@ -295,22 +296,22 @@ The library provides comprehensive error handling:
 
 ```typescript
 // Connection errors
-controller.connectionState.subscribe(state => {
+controller.connectionState.subscribe((state) => {
   if (state === ConnectionState.ERROR) {
-    console.error('Connection failed');
+    console.error("Connection failed");
   }
 });
 
 // Message errors
-controller.error$.subscribe(error => {
-  console.error('STOMP Error:', error.message);
+controller.error$.subscribe((error) => {
+  console.error("STOMP Error:", error.message);
 });
 
 // Try-catch for connection attempts
 try {
   await controller.connect(config);
 } catch (error) {
-  console.error('Failed to connect:', error);
+  console.error("Failed to connect:", error);
 }
 ```
 
@@ -359,6 +360,57 @@ bun run type-check
 
 # Manual testing
 bun test
+```
+
+## 🚀 Release Workflow
+
+We use [standard-version](https://github.com/conventional-changelog/standard-version) for versioning and changelog generation.
+
+### 1. Commit Changes
+
+Follow **Conventional Commits** specification for your commit messages:
+
+- `feat`: A new feature
+- `fix`: A bug fix
+- `docs`: Documentation only changes
+- `style`: Changes that do not affect the meaning of the code (white-space, formatting, etc)
+- `refactor`: A code change that neither fixes a bug nor adds a feature
+- `perf`: A code change that improves performance
+- `test`: Adding missing tests or correcting existing tests
+- `chore`: Changes to the build process or auxiliary tools and libraries such as documentation generation
+
+**Example:**
+
+```bash
+git commit -m "feat: add auto-resubscription to TopicPlugin"
+git commit -m "fix: resolve reconnection issue in StompNetworkController"
+```
+
+### 2. Create Release
+
+Run the release script to bump version and update CHANGELOG.md:
+
+```bash
+# Standard release (bumps version based on commits)
+npm run release
+
+# Specific release type
+npm run release -- --release-as minor
+npm run release -- --release-as patch
+npm run release -- --release-as major
+```
+
+This command will:
+
+1. Bump the version in `package.json`
+2. Update `CHANGELOG.md` with commits since the last release
+3. Commit `package.json` and `CHANGELOG.md`
+4. Tag the commit with the new version
+
+### 3. Push to Repository
+
+```bash
+git push --follow-tags origin main
 ```
 
 ## 📁 Project Structure

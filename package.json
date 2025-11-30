@@ -21,7 +21,8 @@
     "build": "tsc && vite build",
     "build:lib": "vite build --mode lib",
     "preview": "vite preview",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "release": "standard-version"
   },
   "keywords": [
     "stomp",
@@ -44,6 +45,7 @@
     "@types/react": "^18.0.17",
     "@types/react-dom": "^18.0.6",
     "@vitejs/plugin-react": "^5.0.4",
+    "standard-version": "^9.5.0",
     "typescript": "^4.6.4",
     "vite": "^7.1.7",
     "vite-plugin-dts": "^4.5.4"
