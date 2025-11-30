@@ -526,14 +526,26 @@ export class StompNetworkController extends AbstractController {
     const connectSub = adapter.connect$.subscribe(() => {
       this.connectionState$.next(ConnectionState.CONNECTED);
       this.connectSubject.next();
-      // 영구 구독 복원 비활성화 (테스트 목적)
-      console.log("연결 완료 - 영구 구독 복원 비활성화됨");
+      // 영구 구독 복원 비활성화 (테스트 목적) -> 플러그인 훅으로 대체
+      // console.log("연결 완료 - 영구 구독 복원 비활성화됨");
+      
+      // 연결 완료 시 플러그인 훅 실행 (재연결 시에도 실행됨)
+      this._executePluginHooks("onAfterConnect").catch((err) => {
+        console.error("Failed to execute onAfterConnect hooks", err);
+      });
     });
 
     // 연결 해제 이벤트
     const disconnectSub = adapter.disconnect$.subscribe(() => {
       this.connectionState$.next(ConnectionState.DISCONNECTED);
       this.disconnectSubject.next();
+      
+      // 연결 해제 시 플러그인 훅 실행 (비정상 종료 시에도 실행됨)
+      // onBeforeDisconnect를 호출하여 구독 상태를 정리(isActive=false)하게 함
+      this._executePluginHooks("onBeforeDisconnect").catch((err) => {
+        console.error("Failed to execute onBeforeDisconnect hooks", err);
+      });
+
       this.cleanupActiveSubscriptions();
     });
 
