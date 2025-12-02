@@ -1,6 +1,6 @@
 {
   "name": "@rfice/stomp",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "STOMP WebSocket client library with React integration",
   "type": "module",
   "main": "dist/index.js",

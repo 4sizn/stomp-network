@@ -159,87 +159,106 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
     const connectionAttempt$ = new Observable<boolean>((observer) => {
       let isManualDisconnect = false;
 
-      // 이전 클라이언트가 있으면 먼저 정리 (연결 누수 방지)
-      if (this.client?.active) {
-        console.log("이전 STOMP 클라이언트 정리 중...");
-        this.client.deactivate();
-      }
-
-      const stompConfig: StompConfig = {
-        ...config,
-        // 자동 재연결 비활성화 (RxJS retry로 제어)
-        reconnectDelay: 0,
-
-        onConnect: (_frame: IFrame) => {
-          console.log("STOMP 연결 성공");
-          // 연결 성공 시에만 카운터 리셋
-          this._totalReconnectAttempts = 0;
-          this.connectionState$.next(true);
-          this.connectSubject.next(_frame);
-          observer.next(true);
-          // observer.complete() 제거 - 연결 성공 시 Observable을 완료하지 않음
-        },
-
-        onDisconnect: (_frame: IFrame) => {
-          this.connectionState$.next(false);
-          this.disconnectSubject.next(_frame);
-
-          // 수동 연결 해제가 아닌 경우에만 에러로 처리
-          if (!isManualDisconnect && !observer.closed) {
-            observer.error(new Error("STOMP connection disconnected"));
+      const startConnection = async () => {
+        // 이전 클라이언트가 있으면 먼저 정리 (연결 누수 방지)
+        if (this.client) {
+          if (this.client.active) {
+            console.log("이전 STOMP 클라이언트 정리 대기 중...");
+            try {
+              await this.client.deactivate();
+              console.log("이전 STOMP 클라이언트 정리 완료");
+            } catch (e) {
+              console.warn("이전 STOMP 클라이언트 정리 중 오류:", e);
+            }
           }
-        },
+          // this.client = undefined; // 타입 에러 방지를 위해 제거, 어차피 아래에서 덮어씌워짐
+        }
 
-        onStompError: (frame: IFrame) => {
-          const error = new StompStompError("STOMP Error", frame, {
-            frame,
-          });
-          this.errorSubject.next(error);
-          
-          // 전역 재연결 카운터 증가
-          this._totalReconnectAttempts++;
-          
-          // maxAttempts 도달 여부 확인
-          if (this._totalReconnectAttempts >= this.maxReconnectAttempts) {
-            console.error(
-              `최대 재연결 시도 횟수(${this.maxReconnectAttempts}) 도달 (STOMP Error)`
-            );
-            this.maxReconnectReachedSubject.next();
-            // 재연결 중단을 위해 stopReconnect 신호 발생
-            this.stopReconnect$.next();
-          }
-          
-          if (!observer.closed) {
-            observer.error(error);
-          }
-        },
+        const stompConfig: StompConfig = {
+          ...config,
+          // 자동 재연결 비활성화 (RxJS retry로 제어)
+          reconnectDelay: 0,
 
-        onWebSocketError: (_event: Event) => {
-          const error = new StompWebsocketError("WebSocket Error", _event);
-          this.errorSubject.next(error);
-          if (!observer.closed) {
-            observer.error(error);
-          }
-        },
+          onConnect: (_frame: IFrame) => {
+            console.log("STOMP 연결 성공");
+            // 연결 성공 시에만 카운터 리셋
+            this._totalReconnectAttempts = 0;
+            this.connectionState$.next(true);
+            this.connectSubject.next(_frame);
+            observer.next(true);
+            // observer.complete() 제거 - 연결 성공 시 Observable을 완료하지 않음
+          },
 
-        onWebSocketClose: (event: CloseEvent) => {
-          this.connectionState$.next(false);
-          this.disconnectSubject.next(event);
+          onDisconnect: (_frame: IFrame) => {
+            this.connectionState$.next(false);
+            this.disconnectSubject.next(_frame);
 
-          // 수동 연결 해제가 아닌 경우에만 에러로 처리
-          if (!isManualDisconnect && !observer.closed) {
-            observer.error(new Error("WebSocket connection closed"));
-          }
-        },
+            // 수동 연결 해제가 아닌 경우에만 에러로 처리
+            if (!isManualDisconnect && !observer.closed) {
+              observer.error(new Error("STOMP connection disconnected"));
+            }
+          },
+
+          onStompError: (frame: IFrame) => {
+            const error = new StompStompError("STOMP Error", frame, {
+              frame,
+            });
+            this.errorSubject.next(error);
+
+            // 전역 재연결 카운터 증가
+            this._totalReconnectAttempts++;
+
+            // maxAttempts 도달 여부 확인
+            if (this._totalReconnectAttempts >= this.maxReconnectAttempts) {
+              console.error(
+                `최대 재연결 시도 횟수(${this.maxReconnectAttempts}) 도달 (STOMP Error)`
+              );
+              this.maxReconnectReachedSubject.next();
+              // 재연결 중단을 위해 stopReconnect 신호 발생
+              this.stopReconnect$.next();
+            }
+
+            if (!observer.closed) {
+              observer.error(error);
+            }
+          },
+
+          onWebSocketError: (_event: Event) => {
+            const error = new StompWebsocketError("WebSocket Error", _event);
+            this.errorSubject.next(error);
+            if (!observer.closed) {
+              observer.error(error);
+            }
+          },
+
+          onWebSocketClose: (event: CloseEvent) => {
+            this.connectionState$.next(false);
+            this.disconnectSubject.next(event);
+
+            // 수동 연결 해제가 아닌 경우에만 에러로 처리
+            if (!isManualDisconnect && !observer.closed) {
+              observer.error(new Error("WebSocket connection closed"));
+            }
+          },
+        };
+
+        this.client = new StompClient(stompConfig);
+        this.client.activate();
       };
 
-      this.client = new StompClient(stompConfig);
-      this.client.activate();
+      // 비동기 연결 시작
+      startConnection().catch((error) => {
+        if (!observer.closed) {
+          observer.error(error);
+        }
+      });
 
       // cleanup function - 수동 연결 해제 플래그 설정
       return () => {
         isManualDisconnect = true;
         if (this.client?.active) {
+          // 여기서는 await를 사용할 수 없으므로 fire-and-forget
+          // 하지만 다음 재연결 시 startConnection에서 await로 확실히 정리됨
           this.client.deactivate();
         }
       };

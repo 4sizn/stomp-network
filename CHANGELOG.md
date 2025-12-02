@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.6] - 2025-12-02
+
+### Bug Fixes
+
+- **reconnect:** fix race condition in connection cleanup by awaiting deactivate
+
 ## [1.0.5] - 2025-12-02
 
 ### Bug Fixes
