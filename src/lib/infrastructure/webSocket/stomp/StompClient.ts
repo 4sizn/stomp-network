@@ -135,7 +135,7 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
     skip(1) // 초기값 스킵
   );
 
-  private _reconnectAttempts = 0;
+  private _totalReconnectAttempts = 0; // 전체 재연결 시도 횟수 (ERROR 포함)
   private reconnectDelay = 5000; // 기본 재연결 지연 시간
   private subscriptions = new Map<string, any>();
   private rxSubscriptions: Subscription[] = [];
@@ -159,6 +159,12 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
     const connectionAttempt$ = new Observable<boolean>((observer) => {
       let isManualDisconnect = false;
 
+      // 이전 클라이언트가 있으면 먼저 정리 (연결 누수 방지)
+      if (this.client?.active) {
+        console.log("이전 STOMP 클라이언트 정리 중...");
+        this.client.deactivate();
+      }
+
       const stompConfig: StompConfig = {
         ...config,
         // 자동 재연결 비활성화 (RxJS retry로 제어)
@@ -166,7 +172,8 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
 
         onConnect: (_frame: IFrame) => {
           console.log("STOMP 연결 성공");
-          this._reconnectAttempts = 0;
+          // 연결 성공 시에만 카운터 리셋
+          this._totalReconnectAttempts = 0;
           this.connectionState$.next(true);
           this.connectSubject.next(_frame);
           observer.next(true);
@@ -188,6 +195,20 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
             frame,
           });
           this.errorSubject.next(error);
+          
+          // 전역 재연결 카운터 증가
+          this._totalReconnectAttempts++;
+          
+          // maxAttempts 도달 여부 확인
+          if (this._totalReconnectAttempts >= this.maxReconnectAttempts) {
+            console.error(
+              `최대 재연결 시도 횟수(${this.maxReconnectAttempts}) 도달 (STOMP Error)`
+            );
+            this.maxReconnectReachedSubject.next();
+            // 재연결 중단을 위해 stopReconnect 신호 발생
+            this.stopReconnect$.next();
+          }
+          
           if (!observer.closed) {
             observer.error(error);
           }
@@ -233,7 +254,11 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
           retry({
             count: this.maxReconnectAttempts,
             delay: (error, retryCount) => {
-              this._reconnectAttempts = retryCount;
+              // STOMP Error가 아닌 경우에만 전역 카운터 증가
+              // (STOMP Error는 onStompError에서 이미 증가시킴)
+              if (!(error instanceof StompStompError)) {
+                this._totalReconnectAttempts++;
+              }
 
               const baseDelay = this.reconnectDelay;
               const reconnectMode =
@@ -253,12 +278,12 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
               }
 
               console.log(
-                `재연결 시도 ${retryCount}/${this.maxReconnectAttempts}: ${error.message} (모드: ${reconnectMode}, 지연: ${actualDelay}ms)`
+                `재연결 시도 ${this._totalReconnectAttempts}/${this.maxReconnectAttempts}: ${error.message} (모드: ${reconnectMode}, 지연: ${actualDelay}ms)`
               );
 
-              // 재연결 시도 이벤트 발생
+              // 재연결 시도 이벤트 발생 (전역 카운터 사용)
               this.reconnectAttemptSubject.next({
-                attempt: retryCount,
+                attempt: this._totalReconnectAttempts,
                 max: this.maxReconnectAttempts,
               });
 
@@ -510,7 +535,7 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
    * @returns 재연결 시도 횟수
    */
   public getReconnectAttempts(): number {
-    return this._reconnectAttempts;
+    return this._totalReconnectAttempts;
   }
 
   /**
@@ -525,7 +550,7 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
    * 재연결 시도 횟수 리셋
    */
   public resetReconnectAttempts(): void {
-    this._reconnectAttempts = 0;
+    this._totalReconnectAttempts = 0;
   }
 
   /**
@@ -534,10 +559,10 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
    */
   public getReconnectInfo() {
     return {
-      attempts: this._reconnectAttempts,
+      attempts: this._totalReconnectAttempts,
       maxAttempts: this.maxReconnectAttempts,
       isReconnecting:
-        this._reconnectAttempts > 0 && !this.connectionState$.value,
+        this._totalReconnectAttempts > 0 && !this.connectionState$.value,
     };
   }
 
@@ -545,7 +570,7 @@ export class StompWebSocketClientAdapter extends WebSocketClientAdapter<
    * 재연결 상태 강제 리셋 (연결 성공 시 호출)
    */
   public resetReconnectState(): void {
-    this._reconnectAttempts = 0;
+    this._totalReconnectAttempts = 0;
   }
 
   /**
