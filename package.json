@@ -1,5 +1,5 @@
 {
-  "name": "@rfice/stomp",
+  "name": "@4sizn/stomp",
   "version": "1.0.6",
   "description": "STOMP WebSocket client library with React integration",
   "type": "module",
@@ -32,6 +32,10 @@
     "rfice"
   ],
   "author": "R-Support",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/4sizn/stomp-network.git"
+  },
   "license": "MIT",
   "peerDependencies": {
     "react": ">=16.8.0",

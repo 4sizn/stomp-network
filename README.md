@@ -1,4 +1,4 @@
-# @rfice/stomp
+# @4sizn/stomp
 
 A comprehensive STOMP WebSocket client library with React integration, built on top of [@stomp/stompjs](https://github.com/stomp-js/stompjs) and RxJS.
 
@@ -15,11 +15,11 @@ A comprehensive STOMP WebSocket client library with React integration, built on 
 ## 📦 Installation
 
 ```bash
-npm install @rfice/stomp
+npm install @4sizn/stomp
 # or
-yarn add @rfice/stomp
+yarn add @4sizn/stomp
 # or
-bun install @rfice/stomp
+bun install @4sizn/stomp
 ```
 
 ### Peer Dependencies
@@ -33,7 +33,7 @@ npm install @stomp/stompjs rxjs react
 ### Basic Usage with React Hook
 
 ```typescript
-import { useStompClient } from "@rfice/stomp";
+import { useStompClient } from "@4sizn/stomp";
 
 function MyComponent() {
   const { connectionState, isConnected, subscribe, sendMessage } =
@@ -74,7 +74,7 @@ function MyComponent() {
 ### Advanced Usage with Topic Plugin
 
 ```typescript
-import { useStompTopicPlugin } from "@rfice/stomp";
+import { useStompTopicPlugin } from "@4sizn/stomp";
 
 function AdvancedComponent() {
   const {
@@ -132,7 +132,7 @@ function AdvancedComponent() {
 The main controller for STOMP connections:
 
 ```typescript
-import { StompNetworkController, StompWebSocketClient } from "@rfice/stomp";
+import { StompNetworkController, StompWebSocketClient } from "@4sizn/stomp";
 
 const stompClient = new StompWebSocketClient();
 const controller = new StompNetworkController(stompClient);
@@ -163,7 +163,7 @@ await controller.disconnect();
 Advanced topic management:
 
 ```typescript
-import { TopicPlugin } from "@rfice/stomp";
+import { TopicPlugin } from "@4sizn/stomp";
 
 const topicPlugin = new TopicPlugin();
 controller.addPlugin(topicPlugin);
@@ -255,7 +255,7 @@ const {
 Create custom plugins by extending `AbstractPlugin`:
 
 ```typescript
-import { AbstractPlugin } from "@rfice/stomp";
+import { AbstractPlugin } from "@4sizn/stomp";
 
 class MyCustomPlugin extends AbstractPlugin {
   public readonly name = "MyCustomPlugin";

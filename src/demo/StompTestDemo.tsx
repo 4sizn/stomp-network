@@ -620,7 +620,7 @@ export default function StompTestDemo() {
 
   return (
     <div style={{ padding: "20px", fontFamily: "monospace" }}>
-      <h1>@rfice/stomp Demo - STOMP Network Controller Test</h1>
+      <h1>@4sizn/stomp Demo - STOMP Network Controller Test</h1>
 
       {/* TopicPlugin 사용 여부 토글 */}
       <div
