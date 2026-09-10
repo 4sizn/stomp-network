@@ -4,8 +4,12 @@
 > **DEPRECATED — 2026-09-10. This package is no longer maintained.**
 >
 > Use [**ws-pack**](https://github.com/4sizn/ws-pack) instead. `@4sizn/stomp`
-> stopped receiving commits on 2025-12-16 and v1.0.6 is the final release. No
-> further features, fixes or releases will be published.
+> stopped receiving commits on 2025-12-16 and v1.0.6 is the last version tagged.
+> No further features, fixes or releases will follow.
+>
+> **The install instructions below have never worked.** `@4sizn/stomp` is not on
+> the public npm registry — `npm install @4sizn/stomp` returns 404, and did
+> before this deprecation. See `docs/MIGRATION.md`.
 >
 > ws-pack is the maintained successor and carries this library's design forward
 > — the controller layer, the reconnect policy, the plugin base class, the

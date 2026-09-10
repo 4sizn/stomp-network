@@ -79,8 +79,9 @@ never re-read on the way through.
 Anything copied out of this tree should be read against this list first.
 
 - **No tests. Not one, in any generation of this repository.** v1.0.6 was
-  published to npm without a test file. `docs/E2E_TEST_SCENARIOS.md` describes
-  scenarios that were never automated. No CI workflow either.
+  version-bumped, tagged and changelogged without a single test file.
+  `docs/E2E_TEST_SCENARIOS.md` describes scenarios that were never automated.
+  No CI workflow either.
 - **`StompWebSocketClientAdapter` is a god class** — 636 lines, one class, more
   than twenty-five public methods (`getReconnectInfo`, `resetReconnectState`,
   `setMaxReconnectAttempts`, `waitForConnection`, …).
@@ -97,8 +98,32 @@ Anything copied out of this tree should be read against this list first.
 - **43% of the tree is demo code** — `src/demo/StompTestDemo.tsx` (1,262 lines)
   and `src/lib/.../StompClient.example.ts` (513) out of 4,066 total.
 
-## Still to do outside this repository
+## The package was never actually published
 
-Marking `deprecated` in `package.json` does not warn anyone installing from
-npm. The published package needs `npm deprecate "@4sizn/stomp" "<message>"` run
-against the registry, which is a separate, deliberate action.
+`@4sizn/stomp` does not exist on the public npm registry. Checked 2026-09-10:
+
+```
+$ curl -o /dev/null -w '%{http_code}' https://registry.npmjs.org/@4sizn%2Fstomp
+404
+```
+
+The registry itself answers normally for other packages, so this is an absence,
+not an outage or an auth problem. There is no private-registry configuration
+either — no `.npmrc` in the tree and no `publishConfig` in `package.json`, and
+`config/scripts/publish.sh` ends in `npm publish --access public`, aimed at the
+public registry.
+
+So the release machinery ran but the publish never landed, or it landed and was
+removed. Everything downstream of that is a version number and a tag:
+`CHANGELOG.md`, the `1.0.x` history and the v1.0.6 "release" describe a package
+nobody could install. `README.md` has been telling readers to run
+`npm install @4sizn/stomp` the whole time, and that has never worked.
+
+Two consequences:
+
+- **`npm deprecate` cannot be run.** There is no published package to attach a
+  deprecation message to. The `deprecated` field added to `package.json` is
+  therefore the only marker there is, and it only reaches someone reading this
+  repository.
+- **Nobody is depending on this package through npm.** Whatever else the
+  migration to ws-pack costs, it breaks no external installs.
