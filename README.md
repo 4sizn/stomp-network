@@ -1,5 +1,27 @@
 # @4sizn/stomp
 
+> [!WARNING]
+> **DEPRECATED — 2026-09-10. This package is no longer maintained.**
+>
+> Use [**ws-pack**](https://github.com/4sizn/ws-pack) instead. `@4sizn/stomp`
+> stopped receiving commits on 2025-12-16 and v1.0.6 is the final release. No
+> further features, fixes or releases will be published.
+>
+> ws-pack is the maintained successor and carries this library's design forward
+> — the controller layer, the reconnect policy, the plugin base class, the
+> connection-state model and the error types all reappear there, rebuilt with
+> stricter typing and a narrower public surface.
+>
+> Two things here did **not** survive the move, and there is no replacement for
+> them yet: the React integration (`useStompClient`, `useStompTopicPlugin`) and
+> `TopicPlugin`'s persistent-subscription bookkeeping. See
+> [`docs/MIGRATION.md`](docs/MIGRATION.md) before you copy anything out of this
+> tree.
+>
+> This package has never had a single test. Treat every behaviour documented
+> below as unverified.
+
+
 A comprehensive STOMP WebSocket client library with React integration, built on top of [@stomp/stompjs](https://github.com/stomp-js/stompjs) and RxJS.
 
 ## 🚀 Features
